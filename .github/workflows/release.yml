@@ -45,13 +45,13 @@ jobs:
             
             1. Download the appropriate binary for your system
             2. Extract the archive
-            3. Make it executable: `chmod +x mb-tagger` (Linux/macOS)
-            4. Move to your PATH: `sudo mv mb-tagger /usr/local/bin/` (optional)
+            3. Make it executable: `chmod +x musictagger_rs` (Linux/macOS)
+            4. Move to your PATH: `sudo mv musictagger_rs /usr/local/bin/` (optional)
             
             ### Usage
             
             ```bash
-            mb-tagger --path /path/to/music --album-id <musicbrainz-release-id>
+            musictagger_rs --path /path/to/music --album-id <musicbrainz-release-id>
             ```
 
   build:
@@ -123,10 +123,10 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           cd target/${{ matrix.target }}/release
-          strip mb-tagger || true
-          tar czf mb-tagger-${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz mb-tagger
-          echo "ASSET=target/${{ matrix.target }}/release/mb-tagger-${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz" >> $GITHUB_ENV
-          echo "ASSET_NAME=mb-tagger-${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz" >> $GITHUB_ENV
+          strip musictagger_rs || true
+          tar czf musictagger_rs-${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz musictagger_rs
+          echo "ASSET=target/${{ matrix.target }}/release/musictagger_rs-${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz" >> $GITHUB_ENV
+          echo "ASSET_NAME=musictagger_rs-${{ needs.create-release.outputs.version }}-${{ matrix.name }}.tar.gz" >> $GITHUB_ENV
 
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1

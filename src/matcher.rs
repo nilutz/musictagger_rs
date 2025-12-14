@@ -52,13 +52,9 @@ pub fn match_files(path: &Path, album: &Album) -> Result<Vec<FileMatch>> {
             // Get file duration if possible
             let file_duration = get_mp3_duration(file);
 
-            if let Some((track, confidence, score)) = find_best_match_with_duration(
-                &file,
-                &album,
-                &matcher,
-                &matched_tracks,
-                file_duration,
-            ) {
+            if let Some((track, confidence, score)) =
+                find_best_match_with_duration(file, album, &matcher, &matched_tracks, file_duration)
+            {
                 if score >= threshold {
                     let file_dur_str = file_duration
                         .map(|ms| format!(" [file: {}]", format_duration(ms)))
@@ -260,7 +256,7 @@ fn find_best_match_with_duration<'a>(
 
             if duration_diff <= 5000 {
                 // Within 5 seconds - excellent match
-                let duration_bonus = 50 - (duration_diff / 100) as i64;
+                let duration_bonus = 50 - (duration_diff / 100);
                 max_score += duration_bonus.max(0);
             } else if duration_diff <= 10000 {
                 // Within 10 seconds - good match

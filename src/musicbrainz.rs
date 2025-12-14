@@ -4,7 +4,7 @@ use std::time::Duration;
 
 const MB_API_BASE: &str = "https://musicbrainz.org/ws/2";
 const COVERART_API_BASE: &str = "https://coverartarchive.org";
-const USER_AGENT: &str = "mb-tagger/0.1.0 ( contact@example.com )"; // Update with your email
+const USER_AGENT: &str = "musictagger_rs/0.1.0 ( contact@example.com )"; // Update with your email
 
 pub struct MusicBrainzClient {
     client: reqwest::Client,
@@ -55,8 +55,6 @@ struct Artist {
 #[derive(Deserialize, Debug)]
 struct Media {
     tracks: Vec<MBTrack>,
-    #[serde(rename = "track-count")]
-    track_count: Option<u32>,
 }
 
 #[derive(Deserialize, Debug)]

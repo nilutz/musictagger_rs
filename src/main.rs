@@ -12,7 +12,7 @@ use musicbrainz::MusicBrainzClient;
 use tagger::tag_files;
 
 #[derive(Parser)]
-#[command(name = "mb-tagger")]
+#[command(name = "musictagger_rs")]
 #[command(about = "Tag MP3 files with MusicBrainz metadata", long_about = None)]
 struct Cli {
     /// Path to directory containing MP3 files
