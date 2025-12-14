@@ -127,10 +127,10 @@ impl MusicBrainzClient {
 
         let mut attempts = 0;
         let max_attempts = 3;
-        
+
         loop {
             attempts += 1;
-            
+
             if attempts > 1 {
                 let wait_time = Duration::from_millis(1000 * (2_u64.pow(attempts - 1)));
                 tokio::time::sleep(wait_time).await;
@@ -138,7 +138,8 @@ impl MusicBrainzClient {
                 tokio::time::sleep(Duration::from_millis(1100)).await;
             }
 
-            let response = match self.client
+            let response = match self
+                .client
                 .get(&url)
                 .header("User-Agent", USER_AGENT)
                 .send()
@@ -146,7 +147,10 @@ impl MusicBrainzClient {
             {
                 Ok(resp) => resp,
                 Err(e) if attempts < max_attempts => {
-                    eprintln!("Request failed (attempt {}/{}): {}", attempts, max_attempts, e);
+                    eprintln!(
+                        "Request failed (attempt {}/{}): {}",
+                        attempts, max_attempts, e
+                    );
                     continue;
                 }
                 Err(e) => {
@@ -155,11 +159,15 @@ impl MusicBrainzClient {
             };
 
             let status = response.status();
-            
-            if status == reqwest::StatusCode::SERVICE_UNAVAILABLE || 
-               status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+
+            if status == reqwest::StatusCode::SERVICE_UNAVAILABLE
+                || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+            {
                 if attempts < max_attempts {
-                    eprintln!("Rate limited, retrying... (attempt {}/{})", attempts, max_attempts);
+                    eprintln!(
+                        "Rate limited, retrying... (attempt {}/{})",
+                        attempts, max_attempts
+                    );
                     continue;
                 }
             }
@@ -169,7 +177,9 @@ impl MusicBrainzClient {
                 anyhow::bail!("MusicBrainz API error {}: {}", status, error_body);
             }
 
-            let text = response.text().await
+            let text = response
+                .text()
+                .await
                 .context("Failed to read response body")?;
 
             let mb_release: MBRelease = serde_json::from_str(&text)
@@ -185,7 +195,8 @@ impl MusicBrainzClient {
 
         let url = format!("{}/release/{}", COVERART_API_BASE, release_id);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .header("User-Agent", USER_AGENT)
             .send()
@@ -222,7 +233,8 @@ impl MusicBrainzClient {
         // Download the image
         tokio::time::sleep(Duration::from_millis(500)).await;
 
-        let image_response = self.client
+        let image_response = self
+            .client
             .get(image_url)
             .header("User-Agent", USER_AGENT)
             .send()
@@ -260,8 +272,8 @@ impl MusicBrainzClient {
         }
 
         // Need to resize
-        let img = image::load_from_memory(&image_data)
-            .context("Failed to decode image for resizing")?;
+        let img =
+            image::load_from_memory(&image_data).context("Failed to decode image for resizing")?;
 
         let resized = img.resize(MAX_SIZE, MAX_SIZE, image::imageops::FilterType::Lanczos3);
 

@@ -1,6 +1,6 @@
 // src/tagger.rs
 use anyhow::{Context, Result};
-use id3::{Tag, TagLike, Version, frame, Timestamp};
+use id3::{frame, Tag, TagLike, Timestamp, Version};
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::matcher::FileMatch;
@@ -21,10 +21,13 @@ pub fn tag_files(matches: &[FileMatch], album: &Album, cover_art: Option<Vec<u8>
             file_match.file_path.file_name().unwrap().to_string_lossy()
         ));
 
-        write_tags(&file_match.file_path, &file_match.track, album, cover_art.as_deref())
-            .with_context(|| {
-                format!("Failed to write tags to {}", file_match.file_path.display())
-            })?;
+        write_tags(
+            &file_match.file_path,
+            &file_match.track,
+            album,
+            cover_art.as_deref(),
+        )
+        .with_context(|| format!("Failed to write tags to {}", file_match.file_path.display()))?;
 
         pb.inc(1);
     }
@@ -41,8 +44,7 @@ fn write_tags(
     cover_art: Option<&[u8]>,
 ) -> Result<()> {
     // Read existing tag or create new one
-    let mut tag = Tag::read_from_path(file_path)
-        .unwrap_or_else(|_| Tag::new());
+    let mut tag = Tag::read_from_path(file_path).unwrap_or_else(|_| Tag::new());
 
     // Basic metadata
     tag.set_title(&track.title);
@@ -59,7 +61,7 @@ fn write_tags(
                 tag.set_year(year);
             }
         }
-        
+
         if let Some(timestamp) = parse_date_to_timestamp(date) {
             tag.set_date_released(timestamp);
         }
@@ -74,7 +76,7 @@ fn write_tags(
     add_txxx_frame(&mut tag, "MusicBrainz Album Id", &album.id);
     add_txxx_frame(&mut tag, "MusicBrainz Release Track Id", &track.id);
     add_txxx_frame(&mut tag, "MusicBrainz Recording Id", &track.recording_id);
-    
+
     if let Some(artist_id) = &album.album_artist_id {
         add_txxx_frame(&mut tag, "MusicBrainz Album Artist Id", artist_id);
     }
@@ -112,7 +114,7 @@ fn add_cover_art(tag: &mut Tag, image_data: &[u8]) -> Result<()> {
 
 fn parse_date_to_timestamp(date_str: &str) -> Option<Timestamp> {
     let parts: Vec<&str> = date_str.split('-').collect();
-    
+
     match parts.len() {
         1 => {
             let year = parts[0].parse::<i32>().ok()?;

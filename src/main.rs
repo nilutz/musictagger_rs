@@ -4,13 +4,13 @@ use clap::Parser;
 use colored::Colorize;
 use std::path::PathBuf;
 
+mod matcher;
 mod musicbrainz;
 mod tagger;
-mod matcher;
 
+use matcher::match_files;
 use musicbrainz::MusicBrainzClient;
 use tagger::tag_files;
-use matcher::match_files;
 
 #[derive(Parser)]
 #[command(name = "mb-tagger")]
@@ -37,7 +37,7 @@ struct Cli {
     no_cover_art: bool,
 }
 
- // src/main.rs - Update the path handling section
+// src/main.rs - Update the path handling section
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -50,8 +50,7 @@ async fn main() -> Result<()> {
         anyhow::bail!("Path does not exist: {}", cli.path.display());
     }
 
-    let path = cli.path.canonicalize()
-        .context("Failed to resolve path")?;
+    let path = cli.path.canonicalize().context("Failed to resolve path")?;
 
     if !path.is_dir() {
         anyhow::bail!("Path is not a directory: {}", path.display());
@@ -63,13 +62,22 @@ async fn main() -> Result<()> {
     println!();
 
     // Initialize MusicBrainz client
-    println!("{}",  "Fetching album metadata from MusicBrainz...".bright_yellow());
+    println!(
+        "{}",
+        "Fetching album metadata from MusicBrainz...".bright_yellow()
+    );
     let mb_client = MusicBrainzClient::new();
-    let album = mb_client.get_release(&cli.album_id).await
+    let album = mb_client
+        .get_release(&cli.album_id)
+        .await
         .context("Failed to fetch album from MusicBrainz")?;
 
     println!("{} {}", "✓".bright_green(), "Album found:".bright_white());
-    println!("  {} by {}", album.title.bright_cyan(), album.artist.bright_cyan());
+    println!(
+        "  {} by {}",
+        album.title.bright_cyan(),
+        album.artist.bright_cyan()
+    );
     println!("  {} tracks", album.tracks.len());
     println!();
 
@@ -78,15 +86,17 @@ async fn main() -> Result<()> {
         println!("{}", "Fetching cover art...".bright_yellow());
         match mb_client.get_cover_art(&cli.album_id).await {
             Ok(art) => {
-                println!("{} Cover art downloaded ({:.1} KB)", 
-                    "✓".bright_green(), 
+                println!(
+                    "{} Cover art downloaded ({:.1} KB)",
+                    "✓".bright_green(),
                     art.len() as f64 / 1024.0
                 );
                 println!();
                 Some(art)
             }
             Err(e) => {
-                println!("{} {}: {}", 
+                println!(
+                    "{} {}: {}",
                     "⚠".bright_yellow(),
                     "Could not fetch cover art".bright_yellow(),
                     e
@@ -106,7 +116,10 @@ async fn main() -> Result<()> {
     let matches = match_files(&path, &album)?;
 
     if matches.is_empty() {
-        println!("{}", "Could not match any files to album tracks.".bright_red());
+        println!(
+            "{}",
+            "Could not match any files to album tracks.".bright_red()
+        );
         println!("This might happen if:");
         println!("  - The files don't belong to this album");
         println!("  - The file names are very different from track titles");
@@ -115,8 +128,9 @@ async fn main() -> Result<()> {
     }
 
     println!();
-    println!("{} Matched {} of {} files", 
-        "✓".bright_green(), 
+    println!(
+        "{} Matched {} of {} files",
+        "✓".bright_green(),
         matches.len(),
         album.tracks.len()
     );
@@ -134,12 +148,18 @@ async fn main() -> Result<()> {
             "bright red"
         };
 
-        println!("{}. {} (confidence: {})",
+        println!(
+            "{}. {} (confidence: {})",
             (i + 1).to_string().bright_white(),
-            m.file_path.file_name().unwrap().to_string_lossy().bright_cyan(),
+            m.file_path
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .bright_cyan(),
             format!("{:.0}%", m.confidence * 100.0).color(confidence_color)
         );
-        println!("   → Track {}: {} - {}",
+        println!(
+            "   → Track {}: {} - {}",
             m.track.position,
             m.track.artist.bright_white(),
             m.track.title.bright_white()
@@ -172,7 +192,11 @@ async fn main() -> Result<()> {
     tag_files(&matches, &album, cover_art)?;
 
     println!();
-    println!("{} {}", "✓".bright_green(), "Successfully tagged all files!".bright_green().bold());
+    println!(
+        "{} {}",
+        "✓".bright_green(),
+        "Successfully tagged all files!".bright_green().bold()
+    );
 
     Ok(())
 }
@@ -202,25 +226,23 @@ fn list_directory_contents(path: &PathBuf) -> Result<()> {
         let file_name_str = file_name.to_string_lossy();
 
         if path.is_file() {
-            let extension = path.extension()
-                .and_then(|ext| ext.to_str())
-                .unwrap_or("");
+            let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
 
             // Get file size
-            let size = entry.metadata()
-                .map(|m| m.len())
-                .unwrap_or(0);
+            let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
             let size_str = format_file_size(size);
 
             if extension.eq_ignore_ascii_case("mp3") {
-                println!("  {} {} {}",
+                println!(
+                    "  {} {} {}",
                     "♪".bright_cyan(),
                     file_name_str.bright_white(),
                     format!("({})", size_str).bright_black()
                 );
                 mp3_count += 1;
             } else {
-                println!("  {} {} {}",
+                println!(
+                    "  {} {} {}",
                     "·".bright_black(),
                     file_name_str.bright_black(),
                     format!("({})", size_str).bright_black()
@@ -228,15 +250,13 @@ fn list_directory_contents(path: &PathBuf) -> Result<()> {
                 other_count += 1;
             }
         } else if path.is_dir() {
-            println!("  {} {}/",
-                "📁".bright_blue(),
-                file_name_str.bright_blue()
-            );
+            println!("  {} {}/", "📁".bright_blue(), file_name_str.bright_blue());
         }
     }
 
     println!();
-    println!("  {} {} MP3 file{}, {} other file{}",
+    println!(
+        "  {} {} MP3 file{}, {} other file{}",
         "Summary:".bright_white(),
         mp3_count,
         if mp3_count == 1 { "" } else { "s" },
