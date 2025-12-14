@@ -2,6 +2,17 @@
 name = "musictagger_rs"
 version = "0.1.0"
 edition = "2021"
+authors = ["nilutz"]
+description = "Tag MP3 files with metadata from MusicBrainz"
+repository = "https://github.com/nilutz/musictagger_rs"
+license = "MIT"
+keywords = ["musicbrainz", "mp3", "tagger", "metadata", "music"]
+categories = ["command-line-utilities", "multimedia::audio"]
+readme = "README.md"
+
+[[bin]]
+name = "musictagger_rs"
+path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
