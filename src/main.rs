@@ -1,4 +1,3 @@
-// src/main.rs
 use anyhow::{Context, Result};
 use clap::Parser;
 use colored::Colorize;

@@ -1,4 +1,3 @@
-// src/tagger.rs
 use anyhow::{Context, Result};
 use id3::{frame, Tag, TagLike, Timestamp, Version};
 use indicatif::{ProgressBar, ProgressStyle};

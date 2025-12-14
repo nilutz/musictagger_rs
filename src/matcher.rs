@@ -1,4 +1,3 @@
-// src/matcher.rs
 use anyhow::Result;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;

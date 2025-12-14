@@ -1,4 +1,3 @@
-// README.md
 # MusicBrainz MP3 Tagger
 
 A CLI tool to tag MP3 files with metadata from MusicBrainz, similar to beets.
