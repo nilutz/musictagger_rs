@@ -10,10 +10,13 @@ cargo build --release
 
 
 # Basic usage
-musictagger_rs --path /path/to/music/folder --album-id <MBID>
+    
+    musictagger_rs --path /path/to/music/folder --album-id <MBID>
 
 # Dry run (preview matches without writing)
-musictagger_rs --path /path/to/music/folder --album-id <MBID> --dry-run
+    
+    musictagger_rs --path /path/to/music/folder --album-id <MBID> --dry-run
 
 # Auto-confirm without prompting
-musictagger_rs --path /path/to/music/folder --album-id <MBID> --yes
+    
+    musictagger_rs --path /path/to/music/folder --album-id <MBID> --yes
