@@ -77,7 +77,15 @@ async fn main() -> Result<()> {
         album.title.bright_cyan(),
         album.artist.bright_cyan()
     );
-    println!("  {} tracks", album.tracks.len());
+    if album.media_count > 1 {
+        println!(
+            "  {} discs, {} total tracks",
+            album.media_count,
+            album.tracks.len()
+        );
+    } else {
+        println!("  {} tracks", album.tracks.len());
+    }
     println!();
 
     // Fetch cover art
@@ -135,35 +143,77 @@ async fn main() -> Result<()> {
     );
     println!();
 
+    // In src/main.rs, update the final matches display section:
+
     // Display matches
     println!("{}", "Final matches:".bright_white().bold());
     println!();
-    for (i, m) in matches.iter().enumerate() {
-        let confidence_color = if m.confidence > 0.7 {
-            "bright green"
-        } else if m.confidence > 0.4 {
-            "bright yellow"
-        } else {
-            "bright red"
-        };
 
-        println!(
-            "{}. {} (confidence: {})",
-            (i + 1).to_string().bright_white(),
-            m.file_path
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .bright_cyan(),
-            format!("{:.0}%", m.confidence * 100.0).color(confidence_color)
-        );
-        println!(
-            "   → Track {}: {} - {}",
-            m.track.position,
-            m.track.artist.bright_white(),
-            m.track.title.bright_white()
-        );
-        println!();
+    if album.media_count > 1 {
+        let mut current_disc = 0;
+        for (i, m) in matches.iter().enumerate() {
+            if m.track.disc_number != current_disc {
+                current_disc = m.track.disc_number;
+                println!(
+                    "\n{}",
+                    format!("Disc {}:", current_disc).bright_cyan().bold()
+                );
+            }
+
+            let confidence_color = if m.confidence > 0.7 {
+                "bright green"
+            } else if m.confidence > 0.4 {
+                "bright yellow"
+            } else {
+                "bright red"
+            };
+
+            println!(
+                "{}. {} (confidence: {})",
+                (i + 1).to_string().bright_white(),
+                m.file_path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .bright_cyan(),
+                format!("{:.0}%", m.confidence * 100.0).color(confidence_color)
+            );
+            println!(
+                "   → Track {}: {} - {}",
+                m.track.position,
+                m.track.artist.bright_white(),
+                m.track.title.bright_white()
+            );
+            println!();
+        }
+    } else {
+        for (i, m) in matches.iter().enumerate() {
+            let confidence_color = if m.confidence > 0.7 {
+                "bright green"
+            } else if m.confidence > 0.4 {
+                "bright yellow"
+            } else {
+                "bright red"
+            };
+
+            println!(
+                "{}. {} (confidence: {})",
+                (i + 1).to_string().bright_white(),
+                m.file_path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .bright_cyan(),
+                format!("{:.0}%", m.confidence * 100.0).color(confidence_color)
+            );
+            println!(
+                "   → Track {}: {} - {}",
+                m.track.position,
+                m.track.artist.bright_white(),
+                m.track.title.bright_white()
+            );
+            println!();
+        }
     }
 
     if cli.dry_run {

@@ -1,10 +1,11 @@
+// src/musicbrainz.rs
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use std::time::Duration;
 
 const MB_API_BASE: &str = "https://musicbrainz.org/ws/2";
 const COVERART_API_BASE: &str = "https://coverartarchive.org";
-const USER_AGENT: &str = "musictagger_rs/0.1.0 ( contact@example.com )"; // Update with your email
+const USER_AGENT: &str = "mb-tagger/0.1.0 ( contact@example.com )"; // Update with your email
 
 pub struct MusicBrainzClient {
     client: reqwest::Client,
@@ -19,6 +20,7 @@ pub struct Album {
     pub tracks: Vec<Track>,
     pub total_tracks: u32,
     pub album_artist_id: Option<String>,
+    pub media_count: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -29,6 +31,8 @@ pub struct Track {
     pub artist: String,
     pub length: Option<u32>, // in milliseconds
     pub recording_id: String,
+    pub disc_number: u32,
+    pub disc_title: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -54,7 +58,12 @@ struct Artist {
 
 #[derive(Deserialize, Debug)]
 struct Media {
+    position: Option<u32>,
+    title: Option<String>,
+    format: Option<String>,
     tracks: Vec<MBTrack>,
+    #[serde(rename = "track-count")]
+    track_count: Option<u32>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -187,7 +196,6 @@ impl MusicBrainzClient {
     }
 
     pub async fn get_cover_art(&self, release_id: &str) -> Result<Vec<u8>> {
-        // Rate limiting
         tokio::time::sleep(Duration::from_millis(1100)).await;
 
         let url = format!("{}/release/{}", COVERART_API_BASE, release_id);
@@ -212,7 +220,6 @@ impl MusicBrainzClient {
             .await
             .context("Failed to parse cover art response")?;
 
-        // Find the front cover
         let front_image = cover_art_response
             .images
             .iter()
@@ -220,14 +227,12 @@ impl MusicBrainzClient {
             .or_else(|| cover_art_response.images.first())
             .context("No images found in response")?;
 
-        // Use large thumbnail if available, otherwise full image
         let image_url = front_image
             .thumbnails
             .as_ref()
             .and_then(|t| t.large.as_ref().or(t.small.as_ref()))
             .unwrap_or(&front_image.image);
 
-        // Download the image
         tokio::time::sleep(Duration::from_millis(500)).await;
 
         let image_response = self
@@ -247,28 +252,23 @@ impl MusicBrainzClient {
             .await
             .context("Failed to read image bytes")?;
 
-        // Resize image if it's too large (> 1MB or > 1200px)
         self.resize_if_needed(image_bytes.to_vec())
     }
 
     fn resize_if_needed(&self, image_data: Vec<u8>) -> Result<Vec<u8>> {
         const MAX_SIZE: u32 = 1200;
-        const MAX_BYTES: usize = 1024 * 1024; // 1MB
+        const MAX_BYTES: usize = 1024 * 1024;
 
-        // If already small enough, return as-is
         if image_data.len() <= MAX_BYTES {
-            // Try to parse to check if dimensions are okay
             if let Ok(img) = image::load_from_memory(&image_data) {
                 if img.width() <= MAX_SIZE && img.height() <= MAX_SIZE {
                     return Ok(image_data);
                 }
             } else {
-                // Can't parse, return as-is
                 return Ok(image_data);
             }
         }
 
-        // Need to resize
         let img =
             image::load_from_memory(&image_data).context("Failed to decode image for resizing")?;
 
@@ -295,8 +295,12 @@ impl MusicBrainzClient {
             .map(|ac| ac.artist.id.clone());
 
         let mut all_tracks = Vec::new();
+        let media_count = mb_release.media.len();
 
-        for medium in mb_release.media {
+        for (medium_idx, medium) in mb_release.media.into_iter().enumerate() {
+            let disc_number = medium.position.unwrap_or((medium_idx + 1) as u32);
+            let disc_title = medium.title.clone();
+
             for mb_track in medium.tracks {
                 let track_artist = mb_track
                     .artist_credit
@@ -312,6 +316,8 @@ impl MusicBrainzClient {
                     artist: track_artist,
                     length: mb_track.length,
                     recording_id: mb_track.recording.id,
+                    disc_number,
+                    disc_title: disc_title.clone(),
                 });
             }
         }
@@ -326,6 +332,7 @@ impl MusicBrainzClient {
             tracks: all_tracks,
             total_tracks,
             album_artist_id,
+            media_count,
         })
     }
 }

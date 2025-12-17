@@ -1,3 +1,4 @@
+// src/tagger.rs
 use anyhow::{Context, Result};
 use id3::{frame, Tag, TagLike, Timestamp, Version};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -42,7 +43,6 @@ fn write_tags(
     album: &Album,
     cover_art: Option<&[u8]>,
 ) -> Result<()> {
-    // Read existing tag or create new one
     let mut tag = Tag::read_from_path(file_path).unwrap_or_else(|_| Tag::new());
 
     // Basic metadata
@@ -52,6 +52,12 @@ fn write_tags(
     tag.set_album_artist(&album.artist);
     tag.set_track(track.position);
     tag.set_total_tracks(album.total_tracks);
+
+    // Disc number (only set if multi-disc release)
+    if album.media_count > 1 {
+        tag.set_disc(track.disc_number);
+        tag.set_total_discs(album.media_count as u32);
+    }
 
     // Year from date
     if let Some(date) = &album.date {
@@ -80,7 +86,11 @@ fn write_tags(
         add_txxx_frame(&mut tag, "MusicBrainz Album Artist Id", artist_id);
     }
 
-    // Write tag to file
+    // Disc subtitle if present
+    if let Some(disc_title) = &track.disc_title {
+        tag.set_text("TSST", disc_title); // Set subtitle for disc
+    }
+
     tag.write_to_path(file_path, Version::Id3v24)
         .context("Failed to write ID3 tag")?;
 
@@ -88,13 +98,12 @@ fn write_tags(
 }
 
 fn add_cover_art(tag: &mut Tag, image_data: &[u8]) -> Result<()> {
-    // Determine MIME type from image data
     let mime_type = if image_data.starts_with(&[0xFF, 0xD8, 0xFF]) {
         "image/jpeg"
     } else if image_data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
         "image/png"
     } else {
-        "image/jpeg" // default
+        "image/jpeg"
     };
 
     let picture = frame::Picture {
@@ -104,7 +113,6 @@ fn add_cover_art(tag: &mut Tag, image_data: &[u8]) -> Result<()> {
         data: image_data.to_vec(),
     };
 
-    // Remove existing pictures first
     tag.remove_picture_by_type(frame::PictureType::CoverFront);
     tag.add_frame(picture);
 
