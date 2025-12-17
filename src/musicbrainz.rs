@@ -5,7 +5,7 @@ use std::time::Duration;
 
 const MB_API_BASE: &str = "https://musicbrainz.org/ws/2";
 const COVERART_API_BASE: &str = "https://coverartarchive.org";
-const USER_AGENT: &str = "mb-tagger/0.1.0 ( contact@example.com )"; // Update with your email
+const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 pub struct MusicBrainzClient {
     client: reqwest::Client,
