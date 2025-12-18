@@ -60,10 +60,7 @@ struct Artist {
 struct Media {
     position: Option<u32>,
     title: Option<String>,
-    format: Option<String>,
     tracks: Vec<MBTrack>,
-    #[serde(rename = "track-count")]
-    track_count: Option<u32>,
 }
 
 #[derive(Deserialize, Debug)]
