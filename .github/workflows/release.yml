@@ -81,7 +81,10 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             name: macos-arm64
-            
+
+          - target: armv7-unknown-linux-gnueabihf
+              os: ubuntu-latest
+              name: linux-armv7     
 
     steps:
       - name: Checkout code
@@ -97,6 +100,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
+  
+      - name: Install cross-compilation tools (Linux ARMv7)
+              if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+              run: |
+                sudo apt-get update
+                sudo apt-get install -y gcc-arm-linux-gnueabihf
 
       - name: Cache cargo registry
         uses: actions/cache@v3
@@ -109,6 +118,15 @@ jobs:
         with:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
+      
+      - name: Configure ARMv7 linker
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml <<'EOF'
+          [target.armv7-unknown-linux-gnueabihf]
+          linker = "arm-linux-gnueabihf-gcc"
+          EOF
 
       - name: Cache cargo build
         uses: actions/cache@v3
