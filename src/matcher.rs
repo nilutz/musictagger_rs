@@ -397,7 +397,7 @@ fn score_match<'a>(
     let total_score = base_score + qualifier_score + duration_score;
 
     if total_score > 0 {
-        let confidence = (total_score as f64 / 200.0).min(1.0).max(0.0);
+        let confidence = (total_score as f64 / 200.0).clamp(0.0, 1.0);
         Some((track, confidence, total_score))
     } else {
         None

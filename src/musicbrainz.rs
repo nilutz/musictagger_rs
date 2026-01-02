@@ -163,16 +163,15 @@ impl MusicBrainzClient {
 
             let status = response.status();
 
-            if status == reqwest::StatusCode::SERVICE_UNAVAILABLE
-                || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+            if (status == reqwest::StatusCode::SERVICE_UNAVAILABLE
+                || status == reqwest::StatusCode::TOO_MANY_REQUESTS)
+                && attempts < max_attempts
             {
-                if attempts < max_attempts {
-                    eprintln!(
-                        "Rate limited, retrying... (attempt {}/{})",
-                        attempts, max_attempts
-                    );
-                    continue;
-                }
+                eprintln!(
+                    "Rate limited, retrying... (attempt {}/{})",
+                    attempts, max_attempts
+                );
+                continue;
             }
 
             if !status.is_success() {
