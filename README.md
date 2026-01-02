@@ -1,3 +1,7 @@
+[![CI](https://github.com/nilutz/musictagger_rs/actions/workflows/ci.yml/badge.svg)](https://github.com/nilutz/musictagger_rs/actions/workflows/ci.yml)
+
+[![Release](https://github.com/nilutz/musictagger_rs/actions/workflows/release.yml/badge.svg)](https://github.com/nilutz/musictagger_rs/actions/workflows/release.yml)
+
 # MusicBrainz MP3 Tagger
 
 A CLI tool to tag MP3 files with metadata from MusicBrainz, similar to beets.
