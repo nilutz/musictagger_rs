@@ -67,10 +67,10 @@ jobs:
             os: ubuntu-latest
             name: linux-x86_64
             
-          # Linux ARM64
+          # Linux ARM64 (aarch64)
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            name: linux-arm64
+            name: linux-aarch64
             
           # macOS x86_64
           - target: x86_64-apple-darwin
@@ -82,7 +82,7 @@ jobs:
             os: macos-latest
             name: macos-arm64
 
-          # armv7
+          # Linux ARMv7 (32-bit)
           - target: armv7-unknown-linux-gnueabihf
             os: ubuntu-latest
             name: linux-armv7     
@@ -120,6 +120,15 @@ jobs:
           path: ~/.cargo/git
           key: ${{ runner.os }}-cargo-git-${{ hashFiles('**/Cargo.lock') }}
       
+      - name: Configure aarch64 linker
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml <<'EOF'
+          [target.aarch64-unknown-linux-gnu]
+          linker = "aarch64-linux-gnu-gcc"
+          EOF
+
       - name: Configure ARMv7 linker
         if: matrix.target == 'armv7-unknown-linux-gnueabihf'
         run: |
