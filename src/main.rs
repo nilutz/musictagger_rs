@@ -3,6 +3,7 @@ use clap::Parser;
 use colored::Colorize;
 use std::path::PathBuf;
 
+mod manual_mode;
 mod matcher;
 mod musicbrainz;
 mod tagger;
@@ -19,9 +20,13 @@ struct Cli {
     #[arg(short, long)]
     path: PathBuf,
 
-    /// MusicBrainz Release (Album) ID
+    /// MusicBrainz Release (Album) ID (required unless --manual is set)
     #[arg(short, long)]
-    album_id: String,
+    album_id: Option<String>,
+
+    /// Manual tagging mode - enter metadata for each file interactively
+    #[arg(short, long)]
+    manual: bool,
 
     /// Dry run - show matches without writing tags
     #[arg(short, long)]
@@ -36,10 +41,17 @@ struct Cli {
     no_cover_art: bool,
 }
 
-// src/main.rs - Update the path handling section
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Validate that either album_id or manual mode is specified
+    if cli.album_id.is_none() && !cli.manual {
+        anyhow::bail!("Either --album-id or --manual must be specified");
+    }
+    if cli.album_id.is_some() && cli.manual {
+        anyhow::bail!("Cannot use both --album-id and --manual at the same time");
+    }
 
     println!("{}", "MusicBrainz MP3 Tagger".bright_cyan().bold());
     println!();
@@ -55,6 +67,13 @@ async fn main() -> Result<()> {
         anyhow::bail!("Path is not a directory: {}", path.display());
     }
 
+    // Branch to manual mode if requested
+    if cli.manual {
+        return manual_mode::run(&path, cli.dry_run, cli.yes);
+    }
+
+    let album_id = cli.album_id.unwrap();
+
     // List all files in the directory
     println!("{}", "Files in directory:".bright_white());
     list_directory_contents(&path)?;
@@ -67,7 +86,7 @@ async fn main() -> Result<()> {
     );
     let mb_client = MusicBrainzClient::new();
     let album = mb_client
-        .get_release(&cli.album_id)
+        .get_release(&album_id)
         .await
         .context("Failed to fetch album from MusicBrainz")?;
 
@@ -91,7 +110,7 @@ async fn main() -> Result<()> {
     // Fetch cover art
     let cover_art = if !cli.no_cover_art {
         println!("{}", "Fetching cover art...".bright_yellow());
-        match mb_client.get_cover_art(&cli.album_id).await {
+        match mb_client.get_cover_art(&album_id).await {
             Ok(art) => {
                 println!(
                     "{} Cover art downloaded ({:.1} KB)",
