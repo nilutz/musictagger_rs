@@ -28,11 +28,7 @@ pub fn run(path: &Path, dry_run: bool, yes: bool) -> Result<()> {
         anyhow::bail!("No MP3 files found in directory");
     }
 
-    println!(
-        "{} Found {} MP3 file(s)",
-        "✓".bright_green(),
-        files.len()
-    );
+    println!("{} Found {} MP3 file(s)", "✓".bright_green(), files.len());
     println!();
 
     // Try to get album info from existing tags of first file
@@ -44,14 +40,20 @@ pub fn run(path: &Path, dry_run: bool, yes: bool) -> Result<()> {
         .unwrap_or_else(|| "Unknown Album".to_string());
 
     let default_album = first_file_tags.album.unwrap_or(dir_name);
-    let default_album_artist = first_file_tags.album_artist.unwrap_or_else(|| "Various Artists".to_string());
+    let default_album_artist = first_file_tags
+        .album_artist
+        .unwrap_or_else(|| "Various Artists".to_string());
 
-    let (album_title, album_artist, cover_art) = prompt_album_info(&default_album, &default_album_artist, path)?;
+    let (album_title, album_artist, cover_art) =
+        prompt_album_info(&default_album, &default_album_artist, path)?;
     println!();
 
     // Process each file
     println!("{}", "Enter metadata for each track:".bright_white().bold());
-    println!("{}", "(Press Enter to accept suggested value)".bright_black());
+    println!(
+        "{}",
+        "(Press Enter to accept suggested value)".bright_black()
+    );
     println!();
 
     let mut tracks = Vec::new();
@@ -79,9 +81,7 @@ pub fn run(path: &Path, dry_run: bool, yes: bool) -> Result<()> {
             .or(filename_artist)
             .unwrap_or_else(|| album_artist.clone());
 
-        let default_title = existing_tags
-            .title
-            .unwrap_or(filename_title);
+        let default_title = existing_tags.title.unwrap_or(filename_title);
 
         let artist: String = Input::new()
             .with_prompt("  Artist")
@@ -186,7 +186,11 @@ fn collect_mp3_files(path: &Path) -> Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-fn prompt_album_info(default_album: &str, default_artist: &str, path: &Path) -> Result<(String, String, Option<Vec<u8>>)> {
+fn prompt_album_info(
+    default_album: &str,
+    default_artist: &str,
+    path: &Path,
+) -> Result<(String, String, Option<Vec<u8>>)> {
     println!("{}", "Album Information:".bright_white().bold());
 
     let album_title: String = Input::new()
@@ -227,11 +231,7 @@ fn prompt_album_info(default_album: &str, default_artist: &str, path: &Path) -> 
                     Some(data)
                 }
                 Err(e) => {
-                    println!(
-                        "  {} Could not read cover art: {}",
-                        "⚠".bright_yellow(),
-                        e
-                    );
+                    println!("  {} Could not read cover art: {}", "⚠".bright_yellow(), e);
                     None
                 }
             }
