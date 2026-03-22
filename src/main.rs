@@ -58,13 +58,13 @@ async fn main() -> Result<()> {
     // Handle update commands first (they don't require other arguments)
     // Run in blocking context since self_update is synchronous
     if cli.update {
-        return tokio::task::spawn_blocking(|| updater::update())
+        return tokio::task::spawn_blocking(updater::update)
             .await
             .context("Update task panicked")?;
     }
 
     if cli.check_update {
-        return tokio::task::spawn_blocking(|| updater::check_for_updates())
+        return tokio::task::spawn_blocking(updater::check_for_updates)
             .await
             .context("Check update task panicked")?
             .map(|_| ());
