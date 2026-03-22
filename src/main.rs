@@ -71,7 +71,9 @@ async fn main() -> Result<()> {
     }
 
     // For tagging operations, path is required
-    let path = cli.path.context("--path is required for tagging operations")?;
+    let path = cli
+        .path
+        .context("--path is required for tagging operations")?;
 
     // Validate that either album_id or manual mode is specified
     if cli.album_id.is_none() && !cli.manual {

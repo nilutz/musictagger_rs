@@ -43,11 +43,7 @@ pub fn check_for_updates() -> Result<Option<String>> {
 /// Update the binary to the latest version
 pub fn update() -> Result<()> {
     let current = cargo_crate_version!();
-    println!(
-        "{} {}",
-        "Current version:".cyan(),
-        current.yellow()
-    );
+    println!("{} {}", "Current version:".cyan(), current.yellow());
 
     // Check if we have write permissions to the binary location
     if let Ok(exe_path) = std::env::current_exe() {
@@ -100,7 +96,10 @@ pub fn update() -> Result<()> {
         "Successfully updated to version".green().bold(),
         status.version().yellow()
     );
-    println!("{}", "Please restart the application to use the new version.".cyan());
+    println!(
+        "{}",
+        "Please restart the application to use the new version.".cyan()
+    );
 
     Ok(())
 }
