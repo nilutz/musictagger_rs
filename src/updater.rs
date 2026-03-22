@@ -48,6 +48,40 @@ pub fn update() -> Result<()> {
         "Current version:".cyan(),
         current.yellow()
     );
+
+    // Check if we have write permissions to the binary location
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Ok(metadata) = std::fs::metadata(&exe_path) {
+            if metadata.permissions().readonly() {
+                anyhow::bail!(
+                    "Cannot update: binary is read-only.\n\
+                     Binary location: {}\n\
+                     Try running with elevated permissions (sudo) if installed system-wide.",
+                    exe_path.display()
+                );
+            }
+        }
+
+        // On Unix, check if we can write to the parent directory
+        #[cfg(unix)]
+        if let Some(parent) = exe_path.parent() {
+            use std::fs::OpenOptions;
+            if OpenOptions::new().write(true).open(parent).is_err() {
+                println!(
+                    "{} Binary is installed in a system directory: {}",
+                    "⚠".yellow(),
+                    exe_path.display()
+                );
+                println!(
+                    "{} You may need to run: {}",
+                    "ℹ".cyan(),
+                    format!("sudo {} --update", exe_path.display()).yellow()
+                );
+                println!();
+            }
+        }
+    }
+
     println!("{}", "Checking for updates...".cyan());
 
     let status = self_update::backends::github::Update::configure()
