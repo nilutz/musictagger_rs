@@ -7,6 +7,7 @@ mod manual_mode;
 mod matcher;
 mod musicbrainz;
 mod tagger;
+mod updater;
 
 use matcher::match_files;
 use musicbrainz::MusicBrainzClient;
@@ -15,10 +16,11 @@ use tagger::tag_files;
 #[derive(Parser)]
 #[command(name = "musictagger_rs")]
 #[command(about = "Tag MP3 files with MusicBrainz metadata", long_about = None)]
+#[command(version)]
 struct Cli {
     /// Path to directory containing MP3 files
     #[arg(short, long)]
-    path: PathBuf,
+    path: Option<PathBuf>,
 
     /// MusicBrainz Release (Album) ID (required unless --manual is set)
     #[arg(short, long)]
@@ -39,11 +41,37 @@ struct Cli {
     /// Skip downloading cover art
     #[arg(long)]
     no_cover_art: bool,
+
+    /// Update to the latest version
+    #[arg(long)]
+    update: bool,
+
+    /// Check for available updates
+    #[arg(long)]
+    check_update: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    // Handle update commands first (they don't require other arguments)
+    // Run in blocking context since self_update is synchronous
+    if cli.update {
+        return tokio::task::spawn_blocking(|| updater::update())
+            .await
+            .context("Update task panicked")?;
+    }
+
+    if cli.check_update {
+        return tokio::task::spawn_blocking(|| updater::check_for_updates())
+            .await
+            .context("Check update task panicked")?
+            .map(|_| ());
+    }
+
+    // For tagging operations, path is required
+    let path = cli.path.context("--path is required for tagging operations")?;
 
     // Validate that either album_id or manual mode is specified
     if cli.album_id.is_none() && !cli.manual {
@@ -57,11 +85,11 @@ async fn main() -> Result<()> {
     println!();
 
     // Validate and canonicalize path
-    if !cli.path.exists() {
-        anyhow::bail!("Path does not exist: {}", cli.path.display());
+    if !path.exists() {
+        anyhow::bail!("Path does not exist: {}", path.display());
     }
 
-    let path = cli.path.canonicalize().context("Failed to resolve path")?;
+    let path = path.canonicalize().context("Failed to resolve path")?;
 
     if !path.is_dir() {
         anyhow::bail!("Path is not a directory: {}", path.display());
