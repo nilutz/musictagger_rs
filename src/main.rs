@@ -18,7 +18,7 @@ use tagger::tag_files;
 #[command(about = "Tag MP3 files with MusicBrainz metadata", long_about = None)]
 #[command(version)]
 struct Cli {
-    /// Path to directory containing MP3 files
+    /// Path to MP3 file or directory containing MP3 files
     #[arg(short, long)]
     path: Option<PathBuf>,
 
@@ -93,8 +93,20 @@ async fn main() -> Result<()> {
 
     let path = path.canonicalize().context("Failed to resolve path")?;
 
-    if !path.is_dir() {
-        anyhow::bail!("Path is not a directory: {}", path.display());
+    // Accept both files and directories
+    if !path.is_file() && !path.is_dir() {
+        anyhow::bail!("Path must be a file or directory: {}", path.display());
+    }
+
+    // If it's a file, verify it's an MP3
+    if path.is_file() {
+        if let Some(ext) = path.extension() {
+            if !ext.eq_ignore_ascii_case("mp3") {
+                anyhow::bail!("File must be an MP3: {}", path.display());
+            }
+        } else {
+            anyhow::bail!("File has no extension: {}", path.display());
+        }
     }
 
     // Branch to manual mode if requested
@@ -104,10 +116,16 @@ async fn main() -> Result<()> {
 
     let album_id = cli.album_id.unwrap();
 
-    // List all files in the directory
-    println!("{}", "Files in directory:".bright_white());
-    list_directory_contents(&path)?;
-    println!();
+    // List all files in the directory or single file
+    if path.is_dir() {
+        println!("{}", "Files in directory:".bright_white());
+        list_directory_contents(&path)?;
+        println!();
+    } else {
+        println!("{}", "Target file:".bright_white());
+        list_single_file(&path)?;
+        println!();
+    }
 
     // Initialize MusicBrainz client
     println!(
@@ -294,6 +312,26 @@ async fn main() -> Result<()> {
         "{} {}",
         "✓".bright_green(),
         "Successfully tagged all files!".bright_green().bold()
+    );
+
+    Ok(())
+}
+
+fn list_single_file(path: &PathBuf) -> Result<()> {
+    use std::fs;
+
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown");
+    let metadata = fs::metadata(path).context("Failed to read file metadata")?;
+    let size_str = format_file_size(metadata.len());
+
+    println!(
+        "  {} {} {}",
+        "♪".bright_cyan(),
+        file_name.bright_white(),
+        format!("({})", size_str).bright_black()
     );
 
     Ok(())
