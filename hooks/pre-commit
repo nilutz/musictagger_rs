@@ -1,0 +1,36 @@
+#!/bin/bash
+# Pre-commit hook to run cargo fmt
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+echo -e "${YELLOW}Running cargo fmt...${NC}"
+
+# Check if cargo fmt would make changes
+if ! cargo fmt --check &> /dev/null; then
+    echo -e "${YELLOW}Code is not formatted. Running cargo fmt...${NC}"
+
+    # Run cargo fmt to format the code
+    cargo fmt
+
+    # Add the formatted files back to the staging area
+    # Find all Rust files that are staged
+    staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$')
+
+    if [ -n "$staged_files" ]; then
+        echo -e "${GREEN}Formatted files:${NC}"
+        echo "$staged_files"
+
+        # Re-add the formatted files
+        echo "$staged_files" | xargs git add
+
+        echo -e "${GREEN}✓ Code formatted and re-staged${NC}"
+    fi
+else
+    echo -e "${GREEN}✓ Code is already formatted${NC}"
+fi
+
+exit 0
